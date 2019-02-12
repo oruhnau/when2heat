@@ -1,4 +1,4 @@
-# Time series data package
+# when2heat data package
 
 This repository contains scripts that compile heat demand and COP time series for European countries.
 
