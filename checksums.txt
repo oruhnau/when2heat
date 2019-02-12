@@ -1,0 +1,5 @@
+when2heat.sqlite,d6a13497b1168beca0790d33334d73da
+when2heat_multiindex.csv,d658b76b6337df574d43abac205b54ec
+when2heat_multiindex.xlsx,0a6661a1df7b7f613dd897d78a22a05b
+when2heat_singleindex.csv,69a3ae0acedb2f94f4e1f0b7b435f3ba
+when2heat_stacked.csv,07509fa1dae1e53518a194abe74fca90

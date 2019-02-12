@@ -1,0 +1,10 @@
+country,variable,attribute,description
+ISO-2 digit country code,heat_demand,total,Heat demand for space and water heating
+ISO-2 digit country code,heat_demand,space,Heat demand for space heating
+ISO-2 digit country code,heat_demand,water,Heat demand for water heating
+ISO-2 digit country code,COP,ASHP_floor,COP of air-sourced heat pumps with floor heating
+ISO-2 digit country code,COP,ASHP_radiator,COP of air-sourced heat pumps with radiator heating
+ISO-2 digit country code,COP,GSHP_floor,COP of ground-sourced heat pumps with floor heating
+ISO-2 digit country code,COP,GSHP_radiator,COP of ground-sourced heat pumps with radiator heating
+ISO-2 digit country code,COP,WSHP_floor,COP of groundwater-sourced heat pumps with floor heating
+ISO-2 digit country code,COP,WSHP_radiator,COP of groundwater-sourced heat pumps with radiator heating
