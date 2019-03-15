@@ -42,3 +42,11 @@ def upsample_df(df, resolution):
     df.drop(df.index[-1], inplace=True)
 
     return df
+
+
+def group_df_by_multiple_column_levels(df, column_levels):
+
+    df = df.groupby(df.columns.droplevel(list(set(df.columns.names) - set(column_levels))), axis=1).sum()
+    df.columns = pd.MultiIndex.from_tuples(df.columns, names=column_levels)
+
+    return df
