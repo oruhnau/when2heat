@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 
-from scripts.misc import localize, upsample_df
+from scripts.misc import localize, upsample_df, group_df_by_multiple_column_levels
 
 
 def reference_temperature(temperature):
@@ -11,15 +11,8 @@ def reference_temperature(temperature):
     daily_average = temperature.groupby(pd.Grouper(freq='D')).mean().copy()
 
     # Weighted mean
-    weighted_mean = pd.DataFrame(columns=daily_average.columns)
-    start = daily_average.index[0]
-    for i in daily_average.index:
-        weighted_mean.loc[i, :] = (daily_average.loc[i, :] +
-                                   .5 * daily_average.loc[max(i-1, start), :] +
-                                   .25 * daily_average.loc[max(i-2, start), :] +
-                                   .125 * daily_average.loc[max(i-3, start), :]) / (1 + .5 + .25 + .125)
-
-    return weighted_mean
+    return sum([.5 ** i * daily_average.shift(i).fillna(method='bfill') for i in range(4)]) / \
+           sum([.5 ** i for i in range(4)])
 
 
 def daily_heat(temperature, wind, all_parameters):
@@ -139,61 +132,92 @@ def hourly(daily_df, classes, parameters):
 def finishing(df, mapped_population, building_database):
 
     # Single- and multi-family houses are aggregated assuming a ratio of 70:30
+    # Transforming to heat demand assuming an average conversion efficiency of 0.9
     building_database = {
-        'SFH': .7 * building_database['residential'],
-        'MFH': .3 * building_database['residential'],
-        'COM': building_database['commercial']
+        'SFH': .9 * .7 * building_database['residential'],
+        'MFH': .9 * .3 * building_database['residential'],
+        'COM': .9 * building_database['commercial']
     }
 
-    c_results = []
+    results = []
     for country, population in mapped_population.items():
 
         # Localize Timestamps (including daylight saving time correction)
-        df_c = localize(df[country], country)
+        df_country = localize(df[country], country)
 
-        cb_results = 0
+        normalized = []
+        absolute = []
         for building_type, building_data in building_database.items():
 
             # Weighting
-            df_cb = df_c[building_type] * population
+            df_cb = df_country[building_type] * population
 
-            # Scaling factors for the final energy demand in MW
+            # Scaling to 1 TWh/a
             years = df_cb.index.year.unique()
             factors = pd.Series([
-                building_data.loc[country, str(year)] / df_cb.loc[df_cb.index.year == year, ].sum().sum() * 1000000
+                1000000 / df_cb.loc[df_cb.index.year == year, ].sum().sum()
                 for year in years
             ], index=years)
-            df_cb = df_cb.multiply(pd.Series(factors.loc[df_cb.index.year].values, index=df_cb.index), axis=0)
+            normalized.append(df_cb.multiply(
+                pd.Series(factors.loc[df_cb.index.year].values, index=df_cb.index), axis=0
+            ))
 
-            # Transforming to heat demand assuming an average conversion efficiency of 0.9
-            df_cb = .9 * df_cb
+            # Scaling to building database
+            database_years = building_data.columns
+            factors = pd.Series([
+                building_data.loc[country, str(year)] if str(year) in database_years else float('nan')
+                for year in years
+            ], index=years)
+            absolute.append(normalized[-1].multiply(
+                pd.Series(factors.loc[df_cb.index.year].values, index=df_cb.index), axis=0, fill_value=None
+            ))
 
-            # Cumulating building types
-            cb_results += df_cb
+        country_results = pd.concat(
+            [pd.concat(x, axis=1, keys=building_database.keys()) for x in [normalized, absolute]],
+            axis=1, keys=['MW/TWh', 'MW']
+        ).apply(pd.to_numeric, downcast='float')
 
         # Change index to UCT
-        cb_results = cb_results.tz_convert('utc')
-        c_results.append(cb_results)
+        results.append(country_results.tz_convert('utc'))
 
-    return pd.concat(c_results, keys=mapped_population.keys(), axis=1,
-                     names=['country', 'latitude', 'longitude'])
+    return pd.concat(results, keys=mapped_population.keys(), axis=1,
+                     names=['country', 'unit', 'building_type', 'latitude', 'longitude'])
 
 
 def combine(space, water):
 
-    # Aggregate spatially and round to zero decimals
-    space = space.sum(level=0, axis=1, skipna=False).round()
-    water = water.sum(level=0, axis=1, skipna=False).round()
+    # Spatial aggregation
+    space = group_df_by_multiple_column_levels(space, ['country', 'unit', 'building_type'])
+    water = group_df_by_multiple_column_levels(water, ['country', 'unit', 'building_type'])
 
-    # Sum up and aggregate into one df
-    heat = space + water
-    df = pd.concat([heat, space, water],
-                   axis=1, keys=['total', 'space', 'water'])
+    # Merge space and water
+    df = pd.concat([space, water], axis=1, keys=['space', 'water'],
+                   names=['attribute', 'country', 'unit', 'building_type'])
 
-    # Swap Multiindex: County first, data second, unit third
-    df = pd.concat([df], axis=1, keys=['heat_demand'])
-    df = pd.concat([df], axis=1, keys=['MW'])
-    df = df.swaplevel(i=0, j=3, axis=1)
+    # Aggregation of building types for absolute values
+    dfx = df.loc[:, df.columns.get_level_values('unit') == 'MW']
+    dfx = dfx.groupby(dfx.columns.droplevel('building_type'), axis=1).sum()
+    dfx.columns = pd.MultiIndex.from_tuples(dfx.columns)
+    dfx = pd.concat([dfx['space'], dfx['water'], dfx['space'] + dfx['water']], axis=1,
+                    keys=['space', 'water', 'total'], names=['attribute', 'country', 'unit'])
+
+    # Rename columns
+    df.columns = pd.MultiIndex.from_tuples(
+        [('_'.join([level for level in [col_name[0], col_name[3]]]), col_name[1], col_name[2])
+         for col_name in df.columns.values]
+    )
+
+    # Combine building-specific and aggregated time series, round, restore nan
+    df = pd.concat([dfx, df], axis=1).round()
+    df.replace(0, float('nan'), inplace=True)
+
+    # Swap MultiIndex
+    df = pd.concat([
+        df.loc[:, df.columns.get_level_values('unit') == 'MW'],
+        df.loc[:, df.columns.get_level_values('unit') == 'MW/TWh']
+    ], axis=1, keys=['heat_demand', 'heat_profile'])
+    df = df.swaplevel(i=0, j=2, axis=1)
+    df = df.swaplevel(i=1, j=2, axis=1)
     df = df.sort_index(level=0, axis=1)
     df.columns.names = ['country', 'variable', 'attribute', 'unit']
 
