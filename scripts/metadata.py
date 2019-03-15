@@ -52,7 +52,7 @@ keywords:
   - water heating
   - heat pumps
   - coefficient of performance
-publicationDate: 
+publicationDate: '{version}'
 longDescription: 
     This dataset comprises national time series for representing building heat pumps in power system models. 
     The heat demand of buildings and the coefficient of performance (COP) of heat pumps is calculated 
