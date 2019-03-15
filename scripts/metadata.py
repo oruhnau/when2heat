@@ -63,10 +63,10 @@ longDescription:
     The profiles are year-wise scaled to 1 TWh each. For the years 2008 to 2012, the data is additionally 
     scaled with annual statistics on the final energy consumption for heating.
     
-    COP time series for different heat sources – air, ground, and groundwater – and different 
-    heat sinks – floor heating and radiators, both combined with water heating – are calculated 
-    based on COP and heating curves, reanalysis temperature data, a spatial aggregation procedure 
-    with respect to the heat demand, and a correction procedure for part-load losses.
+    COP time series for different heat sources – air, ground, and groundwater – and different heat sinks 
+    – floor heating, radiators, and water heating – are calculated based on COP and heating curves 
+    using reanalysis temperature data, spatially aggregated with respect to the heat demand, 
+    and corrected based on field measurements.
     
     All data processing as well as the download of relevant input data is conducted in python 
     and pandas and has been documented in the Jupyter notebooks linked below.
