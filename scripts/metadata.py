@@ -167,12 +167,15 @@ heat_profile:
     water_MFH: Normalized heat demand in {country} in {unit} for water heating in multi-family houses
     water_COM: Normalized heat demand in {country} in {unit} for water heating in commercial buildings
 COP:
-    ASHP_floor: COP of air-source heat pumps (ASHP) for space and water heating in {country} with floor heating
-    ASHP_radiator: COP of air-source heat pumps (ASHP) for space and water heating in {country} with radiator heating
-    GSHP_floor: COP of ground-source heat pumps (GSHP) for space and water heating in {country} with floor heating
-    GSHP_radiator: COP of ground-source heat pumps (GSHP) for space and water heating in {country} with radiator heating
-    WSHP_floor: COP of groundwater-source heat pumps (WSHP) for space and water heating in {country} with floor heating
-    WSHP_radiator: COP of groundwater-source heat pumps (WSHP) for space and water heating in {country} with radiator heating
+    ASHP_floor: COP of air-source heat pumps (ASHP) for space heating in {country} with floor heating
+    ASHP_radiator: COP of air-source heat pumps (ASHP) for space heating in {country} with radiators
+    ASHP_water: COP of air-source heat pumps (ASHP) for water heating in {country}
+    GSHP_floor: COP of ground-source heat pumps (GSHP) for space heating in {country} with floor heating
+    GSHP_radiator: COP of ground-source heat pumps (GSHP) for space heating in {country} with radiators
+    GSHP_water: COP of ground-source heat pumps (GSHP) for water heating in {country}
+    WSHP_floor: COP of groundwater-source heat pumps (WSHP) for space heating in {country} with floor heating
+    WSHP_radiator: COP of groundwater-source heat pumps (WSHP) for space heating in {country} with radiators
+    WSHP_water: COP of groundwater-source heat pumps (WSHP) for water heating in {country}
 '''
 
 country_map = {

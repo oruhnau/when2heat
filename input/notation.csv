@@ -2,9 +2,24 @@ country,variable,attribute,description
 ISO-2 digit country code,heat_demand,total,Heat demand for space and water heating
 ISO-2 digit country code,heat_demand,space,Heat demand for space heating
 ISO-2 digit country code,heat_demand,water,Heat demand for water heating
+ISO-2 digit country code,heat_demand,space_SFH,Heat demand for space heating in single-family houses
+ISO-2 digit country code,heat_demand,space_MFH,Heat demand for space heating in multi-family houses
+ISO-2 digit country code,heat_demand,space_COM,Heat demand for space heating in commercial buildings
+ISO-2 digit country code,heat_demand,water_SFH,Heat demand for water heating in single-family houses
+ISO-2 digit country code,heat_demand,water_MFH,Heat demand for water heating in multi-family houses
+ISO-2 digit country code,heat_demand,water_COM,Heat demand for water heating in commercial buildings
+ISO-2 digit country code,heat_profile,space_SFH,Normalized heat demand for space heating in single-family houses
+ISO-2 digit country code,heat_profile,space_MFH,Normalized heat demand for space heating in multi-family houses
+ISO-2 digit country code,heat_profile,space_COM,Normalized heat demand for space heating in commercial buildings
+ISO-2 digit country code,heat_profile,water_SFH,Normalized heat demand for water heating in single-family houses
+ISO-2 digit country code,heat_profile,water_MFH,Normalized heat demand for water heating in multi-family houses
+ISO-2 digit country code,heat_profile,water_COM,Normalized heat demand for water heating in commercial buildings
 ISO-2 digit country code,COP,ASHP_floor,COP of air-sourced heat pumps with floor heating
 ISO-2 digit country code,COP,ASHP_radiator,COP of air-sourced heat pumps with radiator heating
+ISO-2 digit country code,COP,ASHP_water,COP of air-sourced heat pumps with water heating
 ISO-2 digit country code,COP,GSHP_floor,COP of ground-sourced heat pumps with floor heating
 ISO-2 digit country code,COP,GSHP_radiator,COP of ground-sourced heat pumps with radiator heating
+ISO-2 digit country code,COP,GSHP_water,COP of ground-sourced heat pumps with water heating
 ISO-2 digit country code,COP,WSHP_floor,COP of groundwater-sourced heat pumps with floor heating
 ISO-2 digit country code,COP,WSHP_radiator,COP of groundwater-sourced heat pumps with radiator heating
+ISO-2 digit country code,COP,WSHP_water,COP of groundwater-sourced heat pumps with water heating
