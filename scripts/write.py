@@ -6,13 +6,15 @@ import pandas as pd
 
 def shaping(demand, cop):
 
+    # Merge demand and cop
     df = pd.concat([demand, cop], axis=1)
     df = df.sort_index(level=0, axis=1)
 
     # Timestamp
+    index = pd.DatetimeIndex(df.index)
     df.index = pd.MultiIndex.from_tuples(zip(
-        pd.DatetimeIndex(df.index).strftime('%Y-%m-%dT%H:%M:%SZ'),
-        pd.DatetimeIndex(df.index).tz_convert('Europe/Brussels').strftime('%Y-%m-%dT%H:%M:%S')
+        index.strftime('%Y-%m-%dT%H:%M:%SZ'),
+        index.tz_convert('Europe/Brussels').strftime('%Y-%m-%dT%H:%M:%S%z')
     ))
     df.index.names = ['utc_timestamp', 'cet_cest_timestamp']
 
@@ -22,17 +24,24 @@ def shaping(demand, cop):
     single.insert(0, 'cet_cest_timestamp', single.index.get_level_values(1))
     single.index = single.index.droplevel(['cet_cest_timestamp'])
 
-
     # Stacked
     stacked = df.copy()
     stacked.index = stacked.index.droplevel(['cet_cest_timestamp'])
     stacked.columns = stacked.columns.droplevel(['unit'])
     stacked = stacked.transpose().stack(dropna=True).to_frame(name='data')
 
+    # Excel
+    df_excel = df.copy()
+    df_excel.index = pd.MultiIndex.from_tuples(zip(
+        index.strftime('%Y-%m-%dT%H:%M:%SZ'),
+        index.tz_convert('Europe/Brussels').strftime('%Y-%m-%dT%H:%M:%S')
+    ))
+
     return {
         'multiindex': df,
         'singleindex': single,
-        'stacked': stacked
+        'stacked': stacked,
+        'excel': df_excel
     }
 
 
@@ -50,11 +59,10 @@ def to_csv(shaped_dfs, output_path):
     for shape, df in shaped_dfs.items():
 
         file = os.path.join(output_path, 'when2heat_{}.csv'.format(shape))
-        df.to_csv(file)
+        df.to_csv(file, float_format='%g')
 
 
 def to_excel(shaped_dfs, output_path):
 
-    file = os.path.join(output_path, 'when2heat_multiindex.xlsx')
-
-    shaped_dfs['multiindex'].to_excel(file)
+    file = os.path.join(output_path, 'when2heat_multiindex.xlsx.csv')
+    shaped_dfs['excel'].to_csv(file, sep=';', decimal=',', float_format='%g')
