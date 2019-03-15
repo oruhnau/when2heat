@@ -72,7 +72,7 @@ def hourly_parameters(input_path):
 
     def read():
         file = os.path.join(input_path, 'bgw_bdew', filename)
-        return pd.read_csv(file, sep=';', decimal=',', index_col=index_col)
+        return pd.read_csv(file, sep=';', decimal=',', index_col=index_col).apply(pd.to_numeric, downcast='float')
 
     parameters = {}
     for building_type in ['SFH', 'MFH', 'COM']:
@@ -96,7 +96,7 @@ def building_database(input_path):
                              'eu_building_database',
                              '{}_{}.csv'.format(building_type, heat_type)),
                 sep=';', decimal=',', index_col=0
-            )
+            ).apply(pd.to_numeric, downcast='float')
             for building_type in ['residential', 'commercial']
         }
         for heat_type in ['space', 'water']
@@ -106,10 +106,4 @@ def building_database(input_path):
 def cop_parameters(input_path):
 
     file = os.path.join(input_path, 'cop', 'cop_parameters.csv')
-    return pd.read_csv(file, sep=';', decimal=',', header=0, index_col=0)
-
-
-def correction_parameters(input_path):
-
-    file = os.path.join(input_path, 'cop', 'correction_parameters.csv')
-    return pd.read_csv(file, sep=';', decimal=',', header=0, index_col=0)
+    return pd.read_csv(file, sep=';', decimal=',', header=0, index_col=0).apply(pd.to_numeric, downcast='float')
