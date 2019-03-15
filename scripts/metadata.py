@@ -8,21 +8,60 @@ import shutil
 
 # First YAML are defined, which are then parsed and stitched together in the function below
 
+
 metadata_head = head = '''
 hide: yes
-external: true
-profile: tabular-data-package
 name: when2heat
-title: when2heat
-description: Heat demand and COP time series
-long_description: 
+id: https://doi.org/10.25832/when2heat/{version}
+profile: tabular-data-package
+licenses:
+    name: cc-by-4.0
+    title: Creative Commons Attribution 4.0
+    path: https://creativecommons.org/licenses/by/4.0/
+attribution:
+title: When2Heat Heating Profiles
+description: Simulated hourly country-aggregated heat demand and COP time series
+homepage: https://data.open-power-system-data.org/when2heat/{version}
+version: '{version}'
+sources:
+  - title: ECMWF
+    web: https://www.ecmwf.int/en/forecasts/datasets/archive-datasets/reanalysis-datasets/era-interim
+  - title: Eurostat
+    web: http://ec.europa.eu/eurostat/web/gisco/geodata/reference-data/population-distribution-demography/geostat
+  - title: EU Building Database
+    web: https://ec.europa.eu/energy/en/eu-buildings-database
+  - title: BGW
+    web: http://www.gwb-netz.de/wa_files/05_bgw_leitfaden_lastprofile_56550.pdf
+    description: Data from pages 55 and 85f are used.
+  - title: BDEW
+    web: https://www.enwg-veroeffentlichungen.de/badtoelz/Netze/Gasnetz/Netzbeschreibung/LF-Abwicklung-von-Standardlastprofilen-Gas-20110630-final.pdf
+contributors:
+  - name: Oliver Ruhnau
+    email: oliver.ruhnau@rwth-aachen.de
+    role: author
+    organization: RWTH Aachen
+lastChanges: '{changes}'
+keywords:
+  - Open Power System Data
+  - When2Heat
+  - heating profiles
+  - time series
+  - power systems
+  - building heat
+  - space heating
+  - water heating
+  - heat pumps
+  - coefficient of performance
+publicationDate: 
+longDescription: 
     This dataset comprises national time series for representing building heat pumps in power system models. 
-    The heat demand of buildins and the coefficient of performance (COP) of heat pumps is calculated 
-    for 16 European countries from 2008 to 2013 in an hourly resolution.  
+    The heat demand of buildings and the coefficient of performance (COP) of heat pumps is calculated 
+    for 16 European countries from {start} to {end} in an hourly resolution.  
     
     Heat demand time series for space and water heating are computed by combining gas standard 
-    load profiles with spatial temperature and wind speed reanalysis data, population geodata, 
-    and annual statistics on the final energy consumption for heating. 
+    load profiles with spatial temperature and wind speed reanalysis data as well as population geodata.  
+    The profiles are year-wise scaled to 1 TWh each. For the years 2008 to 2012, the data is additionally 
+    scaled with annual statistics on the final energy consumption for heating.
     
     COP time series for different heat sources – air, ground, and groundwater – and different 
     heat sinks – floor heating and radiators, both combined with water heating – are calculated 
@@ -31,48 +70,23 @@ long_description:
     
     All data processing as well as the download of relevant input data is conducted in python 
     and pandas and has been documented in the Jupyter notebooks linked below.
-homepage: https://data.open-power-system-data.org/when2heat/{version}
 documentation: 'https://github.com/oruhnau/when2heat/blob/{version}/main.ipynb'
-version: '{version}'
-created: '{version}'
-last_changes: '{changes}'
-keywords:
-  - Open Power System Data
-  - when2heat
-  - time series
-  - power systems
-  - building heat
-  - space heating
-  - water heating
-  - heat pumps
-  - coefficient of performance
-geographical-scope: 16 European countries
-temporal-scope:
+spatial:
+   location: 16 European countries
+   resolution: countries
+_external: true
+temporal:
     start: '{start}-01-01'
     end: '{end}-12-31'
-contributor:
-    name: Oliver Ruhnau
-    email: oliver.ruhnau@rwth-aachen.de
-    role: author
-    organization: RWTH Aachen
-sources:
-  - name: ECMWF
-    web: https://www.ecmwf.int/en/forecasts/datasets/archive-datasets/reanalysis-datasets/era-interim
-  - name: Eurostat
-    web: http://ec.europa.eu/eurostat/web/gisco/geodata/reference-data/population-distribution-demography/geostat
-  - name: EU Building Database
-    web: https://ec.europa.eu/energy/en/eu-buildings-database
-  - name: BGW
-    web: http://www.gwb-netz.de/wa_files/05_bgw_leitfaden_lastprofile_56550.pdf
-  - name: BDEW
-    web: https://www.enwg-veroeffentlichungen.de/badtoelz/Netze/Gasnetz/Netzbeschreibung/LF-Abwicklung-von-Standardlastprofilen-Gas-20110630-final.pdf
+    resolution: hourly
+_metadataVersion: 1.2
 resources:
 '''
 
 excel_resource = '''
 name: when2heat
-title: when2heat excel multiindex
 path: when2heat_multiindex.xlsx
+title: When2Heat excel multiindex
 format: xlsx
 bytes: {bytes}
 hash: {hash}
@@ -81,20 +95,20 @@ mediatype: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 
 csv_resource = '''
 name: when2heat
-title: when2heat csv singleindex
-path: when2heat_singleindex.csv
-format: csv
-bytes: {bytes}
-hash: {hash}
 profile: tabular-data-resource
+path: when2heat_singleindex.csv
+title: When2heat csv singleindex
+format: csv
 mediatype: text/csv
 encoding: UTF8
+bytes: {bytes}
+hash: {hash}
 dialect: 
-    csvddfVersion: 1.0
     delimiter: ","
+    decimalChar: "."
     lineTerminator: "\\n" 
     header: true
-alternative_formats:
+alternativeFormats:
   - path: when2heat_singleindex.csv
     stacking: Singleindex
     format: csv
@@ -127,22 +141,38 @@ name: {country}_{variable}_{attribute}
 description: {description}
 type: number
 unit: {unit}
-opsd-properties: 
+opsdContentfilter: yes
+opsdProperties: 
     country: {country}
     variable: {variable}
     attribute: {attribute}
 '''
 
 descriptions = '''
-total: Heat demand in {country} in {unit} for space and water heating
-space: Heat demand in {country} in {unit} for space heating
-water: Heat demand in {country} in {unit} for water heating
-ASHP_floor: COP of air-sourced heat pumps (ASHP) for space and water heating in {country} with floor heating
-ASHP_radiator: COP of air-sourced heat pumps (ASHP) for space and water heating in {country} with radiator heating
-GSHP_floor: COP of ground-sourced heat pumps (GSHP) for space and water heating in {country} with floor heating
-GSHP_radiator: COP of ground-sourced heat pumps (GSHP) for space and water heating in {country} with radiator heating
-WSHP_floor: COP of groundwater-sourced heat pumps (WSHP) for space and water heating in {country} with floor heating
-WSHP_radiator: COP of groundwater-sourced heat pumps (WSHP) for space and water heating in {country} with radiator heating
+heat_demand:
+    total: Heat demand in {country} in {unit} for space and water heating
+    space: Heat demand in {country} in {unit} for space heating
+    water: Heat demand in {country} in {unit} for water heating
+    space_SFH: Heat demand in {country} in {unit} for space heating in single-family houses
+    space_MFH: Heat demand in {country} in {unit} for space heating in multi-family houses
+    space_COM: Heat demand in {country} in {unit} for space heating in commercial buildings
+    water_SFH: Heat demand in {country} in {unit} for water heating in single-family houses
+    water_MFH: Heat demand in {country} in {unit} for water heating in multi-family houses
+    water_COM: Heat demand in {country} in {unit} for water heating in commercial buildings
+heat_profile:
+    space_SFH: Normalized heat demand in {country} in {unit} for space heating in single-family houses
+    space_MFH: Normalized heat demand in {country} in {unit} for space heating in multi-family houses
+    space_COM: Normalized heat demand in {country} in {unit} for space heating in commercial buildings
+    water_SFH: Normalized heat demand in {country} in {unit} for water heating in single-family houses
+    water_MFH: Normalized heat demand in {country} in {unit} for water heating in multi-family houses
+    water_COM: Normalized heat demand in {country} in {unit} for water heating in commercial buildings
+COP:
+    ASHP_floor: COP of air-source heat pumps (ASHP) for space and water heating in {country} with floor heating
+    ASHP_radiator: COP of air-source heat pumps (ASHP) for space and water heating in {country} with radiator heating
+    GSHP_floor: COP of ground-source heat pumps (GSHP) for space and water heating in {country} with floor heating
+    GSHP_radiator: COP of ground-source heat pumps (GSHP) for space and water heating in {country} with radiator heating
+    WSHP_floor: COP of groundwater-source heat pumps (WSHP) for space and water heating in {country} with floor heating
+    WSHP_radiator: COP of groundwater-source heat pumps (WSHP) for space and water heating in {country} with radiator heating
 '''
 
 country_map = {
@@ -206,7 +236,7 @@ def get_field(column):
 
     description = yaml.load(
         descriptions.format(country=country_map[country], unit=unit)
-    )[attribute]
+    )[variable][attribute]
 
     return yaml.load(
         field.format(
