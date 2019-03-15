@@ -90,7 +90,7 @@ def wind(input_path, mapped_population, plot=True):
     return pd.concat(
         [s[population.index] for population in mapped_population.values()],
         keys=mapped_population.keys(), names=['country', 'latitude', 'longitude'], axis=0
-    )
+    ).apply(pd.to_numeric, downcast='float')
 
 
 def temperature(input_path, year_start, year_end, mapped_population):
@@ -114,4 +114,4 @@ def temperature(input_path, year_start, year_end, mapped_population):
             keys=mapped_population.keys(), axis=1
         ) for parameter in parameters.keys()],
         keys=parameters.keys(), names=['parameter', 'country', 'latitude', 'longitude'], axis=1
-    )
+    ).apply(pd.to_numeric, downcast='float')
