@@ -1,7 +1,9 @@
 
+import os
 import pandas as pd
 
 from scripts.misc import localize
+from scripts.misc import group_df_by_multiple_column_levels
 
 
 def source_temperature(temperature):
@@ -9,7 +11,7 @@ def source_temperature(temperature):
     celsius = temperature - 273.15
 
     return pd.concat(
-        [celsius['air'], celsius['soil'] - 5, 0 * celsius['air'] + 10 - 3],
+        [celsius['air'], celsius['soil'] - 5, 0 * celsius['air'] + 10 - 5],
         keys=['air', 'ground', 'water'],
         names=['source', 'country', 'latitude', 'longitude'],
         axis=1
@@ -47,25 +49,49 @@ def spatial_cop(source, sink, cop_parameters):
         keys=source_types,
         axis=1,
         names=['source', 'sink', 'country', 'latitude', 'longitude']
-    )
+    ).round(4).swaplevel(0, 2, axis=1)
 
 
-def finishing(cop, demand_space, demand_water, correction_parameters):
+def finishing(cop, demand_space, demand_water, correction=.85):
 
     # Localize Timestamps (including daylight saving time correction) and convert to UTC
     countries = cop.columns.get_level_values('country').unique()
+    sinks = cop.columns.get_level_values('sink').unique()
     cop = pd.concat(
-        [localize(cop.swaplevel(0, 2, axis=1)[country], country).tz_convert('utc') for country in countries],
-        keys=countries, axis=1
-    ).swaplevel(0, 2, axis=1)
+        [pd.concat(
+            [pd.concat(
+                [localize(cop[country][sink], country).tz_convert('utc') for sink in sinks],
+                keys=sinks, axis=1
+            )], keys=[country], axis=1
+        ).swaplevel(0, 2, axis=1) for country in countries],
+        axis=1, names=['source', 'sink', 'country', 'latitude', 'longitude']
+    )
+
+    # Prepare demand values
+    demand_space = demand_space.loc[:, demand_space.columns.get_level_values('unit') == 'MW/TWh']
+    demand_space = group_df_by_multiple_column_levels(demand_space, ['country', 'latitude', 'longitude'])
+
+    demand_water = demand_water.loc[:, demand_water.columns.get_level_values('unit') == 'MW/TWh']
+    demand_water = group_df_by_multiple_column_levels(demand_water, ['country', 'latitude', 'longitude'])
 
     # Spatial aggregation
     sources = cop.columns.get_level_values('source').unique()
-    sinks = ['floor', 'radiator']
-    heat = (demand_space + demand_water).sum(level=0, axis=1)
+    sinks = cop.columns.get_level_values('sink').unique()
     power = pd.concat(
         [pd.concat(
-            [(demand_space / cop[source][sink] + demand_water / cop[source]['water']).sum(level=0, axis=1)
+            [(demand_water / cop[source][sink]).sum(level=0, axis=1)
+             if sink == 'water' else
+             (demand_space / cop[source][sink]).sum(level=0, axis=1)
+             for sink in sinks],
+            keys=sinks, axis=1
+        ) for source in sources],
+        keys=sources, axis=1, names=['source', 'sink', 'country']
+    )
+    heat = pd.concat(
+        [pd.concat(
+            [demand_water.sum(level=0, axis=1)
+             if sink == 'water' else
+             demand_space.sum(level=0, axis=1)
              for sink in sinks],
             keys=sinks, axis=1
         ) for source in sources],
@@ -73,20 +99,15 @@ def finishing(cop, demand_space, demand_water, correction_parameters):
     )
     cop = heat / power
 
-    # Part load correction
-    capacity_ratio = power / power.max()
-    for source in sources:
-        cr = capacity_ratio[source].clip(correction_parameters.loc[source, 'cr_min'])
-        cdh = correction_parameters.loc[source, 'cdh']
-        pump = correction_parameters.loc[source, 'pumping']
-        cop[source] = cop[source] * pump * cr / (cdh * cr + 1 - cdh)
+    # Correction and round
+    cop = (cop * correction).round(2)
 
-    # Round
-    cop = cop.round(2)
+    # Fill NA at the end and the beginning of the dataset arising from different local times
+    cop = cop.fillna(method='bfill').fillna(method='ffill')
 
     # Rename columns
     cop.columns.set_levels(['ASHP', 'GSHP', 'WSHP'], level=0, inplace=True)
-    cop.columns.set_levels(['floor', 'radiator'], level=1, inplace=True)
+    cop.columns.set_levels(['radiator', 'floor', 'water'], level=1, inplace=True)
     cop.columns = pd.MultiIndex.from_tuples([('_'.join([level for level in col_name[0:2]]), col_name[2]) for col_name in cop.columns.values])
     cop = pd.concat([cop], keys=['COP'], axis=1)
     cop = pd.concat([cop], keys=['coefficient'], axis=1)
@@ -95,3 +116,40 @@ def finishing(cop, demand_space, demand_water, correction_parameters):
     cop.columns.names = ['country', 'variable', 'attribute', 'unit']
 
     return cop
+
+
+def validation(cop, heat, output_path, corrected):
+
+    def averages(df):
+        return pd.concat(
+            [df.loc[(df.index >= pd.Timestamp(year=2011, month=7, day=1, tz='utc'))
+                    & (df.index < pd.Timestamp(year=2012, month=7, day=1, tz='utc')), ].sum(),
+             df.loc[(df.index >= pd.Timestamp(year=2012, month=7, day=1, tz='utc'))
+                    & (df.index < pd.Timestamp(year=2013, month=7, day=1, tz='utc')), ].sum()],
+            keys=['2011/2012', '2012/2013'], axis=1
+        )
+
+    # Data preparation
+    cop = cop['DE']['COP']
+    cop.columns = cop.columns.droplevel(1)
+
+    heat = heat['DE']['heat_profile']
+    heat.columns = heat.columns.droplevel(1)
+
+    # Power calculation
+    power = pd.DataFrame()
+    for heat_pump in ['ASHP', 'GSHP', 'WSHP']:
+        power[heat_pump] = (
+            .8 * .85 * heat['space_SFH'] / cop['{}_{}'.format(heat_pump, 'floor')] +
+            .8 * .15 * heat['space_SFH'] / cop['{}_{}'.format(heat_pump, 'radiator')] +
+            .2 * heat['water_SFH'] / cop['{}_water'.format(heat_pump)]
+        )
+    heat = pd.concat([.8 * heat['space_SFH'] + .2 * heat['water_SFH']]*3, axis=1, keys=power.columns)
+
+    # Monthly aggregation
+    heat = averages(heat)
+    power = averages(power)
+
+    cop = heat/power
+
+    cop.round(2).to_csv(os.path.join(output_path, 'cop_{}.csv'.format(corrected)), sep=';', decimal=',')
