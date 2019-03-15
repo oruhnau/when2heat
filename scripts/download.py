@@ -18,7 +18,7 @@ def wind(input_path):
 
         # Select all months from 1979 to 2016 by the date of the first day of the month
         dates = "".join([datetime.date(year, month, 1).strftime("%Y%m%d") + "/"
-                         for year in range(1979, 2016)
+                         for year in range(1979, 2018)
                          for month in [10, 11, 12, 1, 2, 3, 4]])[:-1]
 
         # Call the general weather download function with wind specific parameters
