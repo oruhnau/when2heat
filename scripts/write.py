@@ -58,11 +58,10 @@ def to_csv(shaped_dfs, output_path):
 
     for shape, df in shaped_dfs.items():
 
-        file = os.path.join(output_path, 'when2heat_{}.csv'.format(shape))
-        df.to_csv(file, float_format='%g')
+        if shape == 'excel':
+            file = os.path.join(output_path, 'when2heat_multiindex.xlsx.csv')
+            df.to_csv(file, sep=';', decimal=',', float_format='%g')
 
-
-def to_excel(shaped_dfs, output_path):
-
-    file = os.path.join(output_path, 'when2heat_multiindex.xlsx.csv')
-    shaped_dfs['excel'].to_csv(file, sep=';', decimal=',', float_format='%g')
+        else:
+            file = os.path.join(output_path, 'when2heat_{}.csv'.format(shape))
+            df.to_csv(file, float_format='%g')
