@@ -154,21 +154,17 @@ def finishing(df, mapped_population, building_database):
 
             # Scaling to 1 TWh/a
             years = df_cb.index.year.unique()
-            factors = pd.Series([
-                1000000 / df_cb.loc[df_cb.index.year == year, ].sum().sum()
-                for year in years
-            ], index=years)
-            normalized.append(df_cb.multiply(
-                pd.Series(factors.loc[df_cb.index.year].values, index=df_cb.index), axis=0
-            ))
+            factor = 1000000 / df_cb.sum().sum() * len(years)
+            normalized.append(df_cb.multiply(factor))
 
             # Scaling to building database
             database_years = building_data.columns
             factors = pd.Series([
-                building_data.loc[country, str(year)] if str(year) in database_years else float('nan')
+                1000000 / df_cb.loc[df_cb.index.year == year, ].sum().sum() * building_data.loc[country, str(year)]
+                if str(year) in database_years else float('nan')
                 for year in years
             ], index=years)
-            absolute.append(normalized[-1].multiply(
+            absolute.append(df_cb.multiply(
                 pd.Series(factors.loc[df_cb.index.year].values, index=df_cb.index), axis=0, fill_value=None
             ))
 
