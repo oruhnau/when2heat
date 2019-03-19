@@ -58,8 +58,8 @@ def daily(temperature, wind, all_parameters, func):
 
     # All locations are separated by the average wind speed with the threshold 4.4 m/s
     windy_locations = {
-        'normal': wind[wind > 4.4].index,
-        'windy': wind[wind <= 4.4].index
+        'normal': wind[wind <= 4.4].index,
+        'windy': wind[wind > 4.4].index
     }
 
     buildings = ['SFH', 'MFH', 'COM']
