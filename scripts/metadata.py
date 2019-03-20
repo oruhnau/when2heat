@@ -189,6 +189,7 @@ country_map = {
     'HR': 'Croatia',
     'HU': 'Hungary',
     'IE': 'Ireland',
+    'LU': 'Luxembourg',
     'NL': 'Netherlands',
     'PL': 'Poland',
     'RO': 'Romania',

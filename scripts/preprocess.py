@@ -38,20 +38,26 @@ def map_population(input_path, countries, interim_path, plot=True):
                 # Make list from MultiIndex (this is necessary for the spatial join)
                 weather_grid.index = weather_grid.index.tolist()
 
-            # Filter population data by country to cut processing time
-            if country == 'GB':
-                gdf = population[population['CNTR_CODE'] == 'UK'].copy()
+            # For Luxembourg, a single weather grid point is manually added for lack of population geodata
+            if country == 'LU':
+                s = pd.Series({(49.5, 6): 1})
+
             else:
-                gdf = population[population['CNTR_CODE'] == country].copy()
 
-            # Align coordinate reference systems
-            gdf = gdf.to_crs({'init': 'epsg:4326'})
+                # Filter population data by country to cut processing time
+                if country == 'GB':
+                    gdf = population[population['CNTR_CODE'] == 'UK'].copy()
+                else:
+                    gdf = population[population['CNTR_CODE'] == country].copy()
 
-            # Spatial join
-            gdf = gpd.sjoin(gdf, weather_grid, how="left", op='within')
+                # Align coordinate reference systems
+                gdf = gdf.to_crs({'init': 'epsg:4326'})
 
-            # Sum up population
-            s = gdf.groupby('index_right')['TOT_P'].sum()
+                # Spatial join
+                gdf = gpd.sjoin(gdf, weather_grid, how="left", op='within')
+
+                # Sum up population
+                s = gdf.groupby('index_right')['TOT_P'].sum()
 
             # Write results to interim path
             s.to_pickle(file)
