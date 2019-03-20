@@ -15,7 +15,7 @@ name: when2heat
 id: https://doi.org/10.25832/when2heat/{version}
 profile: tabular-data-package
 licenses:
-    name: cc-by-4.0
+  - name: cc-by-4.0
     title: Creative Commons Attribution 4.0
     path: https://creativecommons.org/licenses/by/4.0/
 attribution:
@@ -73,7 +73,7 @@ longDescription:
 documentation: 'https://github.com/oruhnau/when2heat/blob/{version}/main.ipynb'
 spatial:
    location: 16 European countries
-   resolution: countries
+   resolution: Countries
 _external: true
 temporal:
     start: '{start}-01-01'
