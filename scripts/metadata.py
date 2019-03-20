@@ -108,7 +108,7 @@ dialect:
     decimalChar: "."
     lineTerminator: "\\n" 
     header: true
-alternativeFormats:
+alternative_formats:
   - path: when2heat_singleindex.csv
     stacking: Singleindex
     format: csv
