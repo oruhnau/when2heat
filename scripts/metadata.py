@@ -112,7 +112,7 @@ _alternativeFormats:
   - path: when2heat.csv
     stacking: Singleindex
     format: csv
-  - path: when2heat_multiindex.xlsx
+  - path: when2heat.xlsx
     stacking: Multiindex
     format: xlsx
   - path: when2heat_multiindex.csv
@@ -129,7 +129,7 @@ schema:
         description: Start of timeperiod in Coordinated Universal Time
         type: datetime
         format: YYYY-MM-DDThh:mm:ssZ
-        opsd-contentfilter: true
+        opsdContentfilter: true
       - name: cet_cest_timestamp
         description: Start of timeperiod in Central European (Summer-) Time
         type: datetime
@@ -141,7 +141,7 @@ name: {country}_{variable}_{attribute}
 description: {description}
 type: number
 unit: {unit}
-opsdContentfilter: yes
+opsdContentfilter: false
 opsdProperties: 
     country: {country}
     variable: {variable}
@@ -207,8 +207,8 @@ def make_json(shaped_dfs, version, changes, year_start, year_end, output_path):
 
     # List of resources (files included in the datapackage)
     metadata['resources'] = [
-        get_resource(excel_resource, os.path.join(output_path, 'when2heat_multiindex.xlsx')),
-        get_resource(csv_resource, os.path.join(output_path, 'when2heat_singleindex.csv'))
+        get_resource(excel_resource, os.path.join(output_path, 'when2heat.xlsx')),
+        get_resource(csv_resource, os.path.join(output_path, 'when2heat.csv'))
     ]
 
     # List of fields
