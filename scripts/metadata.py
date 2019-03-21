@@ -85,7 +85,7 @@ resources:
 
 excel_resource = '''
 name: when2heat
-path: when2heat_multiindex.xlsx
+path: when2heat.xlsx
 title: When2Heat excel multiindex
 format: xlsx
 bytes: {bytes}
@@ -96,7 +96,7 @@ mediatype: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 csv_resource = '''
 name: when2heat
 profile: tabular-data-resource
-path: when2heat_singleindex.csv
+path: when2heat.csv
 title: When2heat csv singleindex
 format: csv
 mediatype: text/csv
@@ -108,8 +108,8 @@ dialect:
     decimalChar: "."
     lineTerminator: "\\n" 
     header: true
-alternative_formats:
-  - path: when2heat_singleindex.csv
+_alternativeFormats:
+  - path: when2heat.csv
     stacking: Singleindex
     format: csv
   - path: when2heat_multiindex.xlsx
