@@ -208,7 +208,9 @@ def combine(space, water):
     df.replace(0, float('nan'), inplace=True)
 
     # Fill NA at the end and the beginning of the dataset arising from different local times
+    df_short = df.loc[:, df.columns.get_level_values('unit') == 'MW'].copy().dropna(how='all')
     df = df.fillna(method='bfill').fillna(method='ffill')
+    df[df_short.columns] = df_short.fillna(method='bfill').fillna(method='ffill')
 
     # Swap MultiIndex
     df = pd.concat([

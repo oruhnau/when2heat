@@ -60,7 +60,7 @@ longDescription:
     
     Heat demand time series for space and water heating are computed by combining gas standard 
     load profiles with spatial temperature and wind speed reanalysis data as well as population geodata.  
-    The profiles are year-wise scaled to 1 TWh each. For the years 2008 to 2012, the data is additionally 
+    The profiles are year-wise scaled to 1 TWh each. For the years 2008 to 2013, the data is additionally 
     scaled with annual statistics on the final energy consumption for heating.
     
     COP time series for different heat sources – air, ground, and groundwater – and different heat sinks 
