@@ -10,15 +10,21 @@ import shutil
 
 
 metadata_head = head = '''
-hide: yes
 name: when2heat
+external: true
 id: https://doi.org/10.25832/when2heat/{version}
 profile: tabular-data-package
 licenses:
   - name: cc-by-4.0
     title: Creative Commons Attribution 4.0
     path: https://creativecommons.org/licenses/by/4.0/
-attribution:
+attribution: 
+    "Attribution should be given as follows: <ul>
+    <li style='margin-bottom: 0;'>Ruhnau, O., Hirth, L., and Praktiknjo, A. (2019). Time series of heat demand and heat pump efficiency for energy system modeling. Scientific Data, 6, 189. 
+    <a href='https://doi.org/10.1038/s41597-019-0199-y'>https://doi.org/10.1038/s41597-019-0199-y</a>
+    <li style='margin-bottom: 0;'>Ruhnau, O. ({year}). When2Heat Heating Profiles. Open Power System Data. 
+    <a href='https://doi.org/10.25832/when2heat/{version}'>https://doi.org/10.25832/when2heat/{version}</a>
+    </ul>"
 title: When2Heat Heating Profiles
 description: Simulated hourly country-aggregated heat demand and COP time series
 homepage: https://data.open-power-system-data.org/when2heat/{version}
@@ -69,7 +75,8 @@ longDescription:
     and corrected based on field measurements.
     
     All data processing as well as the download of relevant input data is conducted in python 
-    and pandas and has been documented in the Jupyter notebooks linked below.
+    and pandas and has been documented in the Jupyter notebooks linked below. Please also consider and cite
+    our <a href="https://doi.org/10.1038/s41597-019-0199-y">Data Descriptor</a>.
 documentation: 'https://github.com/oruhnau/when2heat/blob/{version}/main.ipynb'
 spatial:
    location: 16 European countries
@@ -202,7 +209,7 @@ def make_json(shaped_dfs, version, changes, year_start, year_end, output_path):
 
     # Header
     metadata = yaml.load(
-        metadata_head.format(version=version, changes=changes, start=year_start, end=year_end)
+        metadata_head.format(version=version, changes=changes, start=year_start, end=year_end, year=version[:4])
     )
 
     # List of resources (files included in the datapackage)
