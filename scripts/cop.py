@@ -33,7 +33,7 @@ def sink_temperature(temperature):
 def spatial_cop(source, sink, cop_parameters):
 
     def cop_curve(delta_t, source_type):
-        delta_t.clip(lower=15, inplace=True)
+        delta_t = delta_t.clip(lower=15)
         return sum(cop_parameters.loc[i, source_type] * delta_t ** i for i in range(3))
 
     source_types = source.columns.get_level_values('source').unique()
@@ -65,7 +65,7 @@ def finishing(cop, demand_space, demand_water, correction=.85):
             )], keys=[country], axis=1
         ).swaplevel(0, 2, axis=1) for country in countries],
         axis=1, names=['source', 'sink', 'country', 'latitude', 'longitude']
-    )
+    ).sort_index(axis=1)
 
     # Prepare demand values
     demand_space = demand_space.loc[:, demand_space.columns.get_level_values('unit') == 'MW/TWh']
@@ -79,9 +79,9 @@ def finishing(cop, demand_space, demand_water, correction=.85):
     sinks = cop.columns.get_level_values('sink').unique()
     power = pd.concat(
         [pd.concat(
-            [(demand_water / cop[source][sink]).sum(level=0, axis=1)
+            [(demand_water / cop[source][sink]).groupby(level=0, axis=1).sum()
              if sink == 'water' else
-             (demand_space / cop[source][sink]).sum(level=0, axis=1)
+             (demand_space / cop[source][sink]).groupby(level=0, axis=1).sum()
              for sink in sinks],
             keys=sinks, axis=1
         ) for source in sources],
@@ -89,9 +89,9 @@ def finishing(cop, demand_space, demand_water, correction=.85):
     )
     heat = pd.concat(
         [pd.concat(
-            [demand_water.sum(level=0, axis=1)
+            [demand_water.groupby(level=0, axis=1).sum()
              if sink == 'water' else
-             demand_space.sum(level=0, axis=1)
+             demand_space.groupby(level=0, axis=1).sum()
              for sink in sinks],
             keys=sinks, axis=1
         ) for source in sources],
@@ -106,8 +106,8 @@ def finishing(cop, demand_space, demand_water, correction=.85):
     cop = cop.fillna(method='bfill').fillna(method='ffill')
 
     # Rename columns
-    cop.columns.set_levels(['ASHP', 'GSHP', 'WSHP'], level=0, inplace=True)
-    cop.columns.set_levels(['radiator', 'floor', 'water'], level=1, inplace=True)
+    cop.columns = cop.columns.set_levels(['ASHP', 'GSHP', 'WSHP'], level=0)
+    cop.columns = cop.columns.set_levels(['radiator', 'floor', 'water'], level=1)
     cop.columns = pd.MultiIndex.from_tuples([('_'.join([level for level in col_name[0:2]]), col_name[2]) for col_name in cop.columns.values])
     cop = pd.concat([cop], keys=['COP'], axis=1)
     cop = pd.concat([cop], keys=['coefficient'], axis=1)

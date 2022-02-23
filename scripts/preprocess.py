@@ -47,6 +47,8 @@ def map_population(input_path, countries, interim_path, plot=True):
                 # Filter population data by country to cut processing time
                 if country == 'GB':
                     gdf = population[population['CNTR_CODE'] == 'UK'].copy()
+                elif country == 'GR':
+                    gdf = population[population['CNTR_CODE'] == 'EL'].copy()
                 else:
                     gdf = population[population['CNTR_CODE'] == country].copy()
 
@@ -103,21 +105,27 @@ def temperature(input_path, year_start, year_end, mapped_population):
 
     parameters = {
         'air': 't2m',
-        'soil': 'stl4'
+        'soil': 'stl1'
     }
 
-    t = pd.concat(
-        [read.temperature(input_path, year_start, year_end, parameter) for parameter in parameters.values()],
-        keys=parameters.keys(), names=['parameter', 'latitude', 'longitude'], axis=1
-    )
+    ts_parameters = []
+    for parameter in parameters.values():
 
-    t = upsample_df(t, '60min')
+        ts_years = []
+        for year in list(range(year_start, year_end + 1)):
+            ts = read.temperature(input_path, year, year, parameter)
+            ts_years.append(ts)
 
-    # Temperature data is filtered by country
+        df_years = pd.concat(ts_years, axis=0)
+
+        # Temperature data is filtered by country
+        df_countries = pd.concat(
+            [df_years[population.index] for population in mapped_population.values()],
+            keys=mapped_population.keys(), axis=1, names=['country', 'latitude', 'longitude']
+        ).apply(pd.to_numeric, downcast='float')
+
+        ts_parameters.append(df_countries)
+
     return pd.concat(
-        [pd.concat(
-            [t[parameter][population.index] for population in mapped_population.values()],
-            keys=mapped_population.keys(), axis=1
-        ) for parameter in parameters.keys()],
-        keys=parameters.keys(), names=['parameter', 'country', 'latitude', 'longitude'], axis=1
-    ).apply(pd.to_numeric, downcast='float')
+        ts_parameters, keys=parameters.keys(), names=['parameter', 'country', 'latitude', 'longitude'], axis=1
+    )

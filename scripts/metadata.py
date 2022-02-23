@@ -22,20 +22,22 @@ attribution:
     "Attribution should be given as follows: <ul>
     <li style='margin-bottom: 0;'>Ruhnau, O., Hirth, L., and Praktiknjo, A. (2019). Time series of heat demand and heat pump efficiency for energy system modeling. Scientific Data, 6, 189. 
     <a href='https://doi.org/10.1038/s41597-019-0199-y'>https://doi.org/10.1038/s41597-019-0199-y</a>
-    <li style='margin-bottom: 0;'>Ruhnau, O. ({year}). When2Heat Heating Profiles. Open Power System Data. 
+    <li style='margin-bottom: 0;'>Ruhnau, O., Muessel, J. ({year}). Update and extension of the When2Heat dataset. Econstor Working Paper. 
+    <a href='http://hdl.handle.net/10419/249997'>http://hdl.handle.net/10419/249997</a>
+    <li style='margin-bottom: 0;'>Ruhnau, O., Muessel, J. ({year}). When2Heat Heating Profiles. Open Power System Data. 
     <a href='https://doi.org/10.25832/when2heat/{version}'>https://doi.org/10.25832/when2heat/{version}</a>
-    </ul>"
+    </ul>"  
 title: When2Heat Heating Profiles
 description: Simulated hourly country-aggregated heat demand and COP time series
 homepage: https://data.open-power-system-data.org/when2heat/{version}
 version: '{version}'
 sources:
   - title: ECMWF
-    web: https://www.ecmwf.int/en/forecasts/datasets/archive-datasets/reanalysis-datasets/era-interim
+    web: https://www.ecmwf.int/en/forecasts/datasets/reanalysis-datasets/era5
   - title: Eurostat
     web: http://ec.europa.eu/eurostat/web/gisco/geodata/reference-data/population-distribution-demography/geostat
-  - title: EU Building Database
-    web: https://ec.europa.eu/energy/en/eu-buildings-database
+  - title: JRC-IDEEES
+    web: https://ec.europa.eu/jrc/en/potencia/jrc-idees
   - title: BGW
     web: http://www.gwb-netz.de/wa_files/05_bgw_leitfaden_lastprofile_56550.pdf
     description: Data from pages 55 and 85f are used.
@@ -43,9 +45,14 @@ sources:
     web: https://www.enwg-veroeffentlichungen.de/badtoelz/Netze/Gasnetz/Netzbeschreibung/LF-Abwicklung-von-Standardlastprofilen-Gas-20110630-final.pdf
 contributors:
   - name: Oliver Ruhnau
-    email: oliver.ruhnau@rwth-aachen.de
+    email: ruhnau@hertie-school.org
     role: author
-    organization: RWTH Aachen
+    organization: Hertie School
+  - name: Jarusch Muessel
+    email: muessel@hertie-school.org
+    role: author
+    organization: Hertie School
+    
 lastChanges: '{changes}'
 keywords:
   - Open Power System Data
@@ -62,11 +69,11 @@ publicationDate: '{version}'
 longDescription: 
     This dataset comprises national time series for representing building heat pumps in power system models. 
     The heat demand of buildings and the coefficient of performance (COP) of heat pumps is calculated 
-    for 16 European countries from {start} to {end} in an hourly resolution.  
+    for 28 European countries from {start} to {end} in an hourly resolution.  
     
     Heat demand time series for space and water heating are computed by combining gas standard 
     load profiles with spatial temperature and wind speed reanalysis data as well as population geodata.  
-    The profiles are year-wise scaled to 1 TWh each. For the years 2008 to 2013, the data is additionally 
+    The profiles are year-wise scaled to 1 TWh each. For the years 2008 to 2015, the data is additionally 
     scaled with annual statistics on the final energy consumption for heating.
     
     COP time series for different heat sources – air, ground, and groundwater – and different heat sinks 
@@ -76,10 +83,11 @@ longDescription:
     
     All data processing as well as the download of relevant input data is conducted in python 
     and pandas and has been documented in the Jupyter notebooks linked below. Please also consider and cite
-    our <a href="https://doi.org/10.1038/s41597-019-0199-y">Data Descriptor</a>.
+    our <a href="https://doi.org/10.1038/s41597-019-0199-y">Data Descriptor</a> of the original dataset as well as 
+    our <a href="http://hdl.handle.net/10419/249997">Working Paper</a> at on recent updates and extensions of the dataset.
 documentation: 'https://github.com/oruhnau/when2heat/blob/{version}/main.ipynb'
 spatial:
-   location: 16 European countries
+   location: 28 European countries
    resolution: Countries
 _external: true
 temporal:
@@ -191,15 +199,26 @@ country_map = {
     'BG': 'Bulgaria',
     'CZ': 'Czech Republic',
     'DE': 'Germany',
+    'DK': 'Denmark',
+    'EE': 'Estonia',
+    'ES': 'Spain',
+    'FI': 'Finland',
     'FR': 'France',
     'GB': 'Great Britain',
+    'GR': 'Greece',
     'HR': 'Croatia',
     'HU': 'Hungary',
     'IE': 'Ireland',
+    'IT': 'Italy',
+    'LT': 'Lithuania',
     'LU': 'Luxembourg',
+    'LV': 'Latvia',
     'NL': 'Netherlands',
+    'NO': 'Norway',
     'PL': 'Poland',
+    'PT': 'Portugal',
     'RO': 'Romania',
+    'SE': 'Sweden',
     'SI': 'Slovenia',
     'SK': 'Slovakia',
 }
@@ -209,7 +228,8 @@ def make_json(shaped_dfs, version, changes, year_start, year_end, output_path):
 
     # Header
     metadata = yaml.load(
-        metadata_head.format(version=version, changes=changes, start=year_start, end=year_end, year=version[:4])
+        metadata_head.format(version=version, changes=changes, start=year_start, end=year_end, year=version[:4]),
+        Loader=yaml.SafeLoader
     )
 
     # List of resources (files included in the datapackage)
@@ -237,7 +257,7 @@ def get_resource(template, file_path):
         file_hash = hashlib.md5(f.read()).hexdigest()
 
     return yaml.load(
-        template.format(bytes=file_size, hash=file_hash)
+        template.format(bytes=file_size, hash=file_hash),  Loader=yaml.SafeLoader
     )
 
 
@@ -246,7 +266,7 @@ def get_field(column):
     country, variable, attribute, unit = column
 
     description = yaml.load(
-        descriptions.format(country=country_map[country], unit=unit)
+        descriptions.format(country=country_map[country], unit=unit), Loader=yaml.SafeLoader
     )[variable][attribute]
 
     return yaml.load(
@@ -256,7 +276,7 @@ def get_field(column):
             attribute=attribute,
             unit=unit,
             description=description
-        )
+        ), Loader=yaml.SafeLoader
     )
 
 

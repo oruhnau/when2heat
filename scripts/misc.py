@@ -16,7 +16,7 @@ def localize(df, country, ambiguous=None):
 
     # Duplicate values that exist twice because of daylight saving time
     except pytz.AmbiguousTimeError as err:
-        idx = pd.Timestamp(err.args[0].split("'")[1])
+        idx = pd.Timestamp(err.args[0].split("from ")[1].split(",")[0])
         unambiguous_df = localize(df.loc[df.index != idx, ], country)
         ambiguous_df = localize(df.loc[[idx, idx], ], country, ambiguous=[True, False])
         return unambiguous_df.append(ambiguous_df).sort_index()

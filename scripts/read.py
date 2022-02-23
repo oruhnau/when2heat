@@ -2,16 +2,32 @@
 import os
 import pandas as pd
 import geopandas as gpd
+import datetime as dt
 from netCDF4 import Dataset, num2date
 from shapely.geometry import Point
 
 
-def temperature(input_path, year_start, year_end, param):
+def temperature(input_path, year_start, year_end, parameter):
 
-    return pd.concat(
-        [weather(input_path, 'ERA_temperature_{}.nc'.format(year), param) for year in range(year_start, year_end+1)],
-        axis=0
-    )
+
+    df_list = []
+    for year in range(year_start, year_end + 1):
+
+        if parameter == "t2m":
+            df_int = pd.concat(
+                [weather(input_path, 'ERA_temperature_{}_{}.nc'.format('2m_temperature', year), parameter)],
+                axis=0
+            )
+
+        if parameter == "stl1":
+            df_int = pd.concat(
+                [weather(input_path, 'ERA_temperature_{}_{}.nc'.format('soil_temperature_level_1', year), parameter)],
+                axis=0
+            )
+        df_list.append(df_int)
+    df = pd.concat(df_list, axis = 0)
+
+    return df
 
 
 def wind(input_path):
@@ -31,14 +47,19 @@ def weather(input_path, filename, variable_name):
     longitude = nc.variables['longitude'][:]
     variable = nc.variables[variable_name][:]
 
+    if variable_name == "si10":
+        variable = variable[:, 0].data
+
     # Transform to pd.DataFrame
+    index = pd.Index(num2date(time, time_units, only_use_python_datetimes=True), name='time')
+
+    index = index.map(lambda x: dt.datetime(x.year, x.month, x.day, x.hour, x.minute, x.second))
+
     df = pd.DataFrame(data=variable.reshape(len(time), len(latitude) * len(longitude)),
-                      index=pd.Index(num2date(time, time_units), name='time'),
-                      columns=pd.MultiIndex.from_product([latitude, longitude],
-                                                         names=('latitude', 'longitude')))
+                      index=index,
+                      columns=pd.MultiIndex.from_product([latitude, longitude], names=('latitude', 'longitude')))
 
     return df
-
 
 def population(input_path):
 
@@ -68,6 +89,12 @@ def daily_parameters(input_path):
     return pd.read_csv(file, sep=';', decimal=',', header=[0, 1], index_col=0)
 
 
+def heating_thresholds(input_path):
+
+    file = os.path.join(input_path, 'heating_thresholds', 'heating_thresholds.csv')
+    return pd.read_csv(file, sep=';', decimal=',', index_col=0)['Heating threshold']
+
+
 def hourly_parameters(input_path):
 
     def read():
@@ -93,15 +120,14 @@ def building_database(input_path):
         heat_type: {
             building_type: pd.read_csv(
                 os.path.join(input_path,
-                             'eu_building_database',
+                             'JRC_IDEES',
                              '{}_{}.csv'.format(building_type, heat_type)),
-                sep=';', decimal=',', index_col=0
+                decimal=',', index_col=0
             ).apply(pd.to_numeric, downcast='float')
-            for building_type in ['residential', 'commercial']
+            for building_type in ['Residential', 'Tertiary']
         }
         for heat_type in ['space', 'water']
     }
-
 
 def cop_parameters(input_path):
 

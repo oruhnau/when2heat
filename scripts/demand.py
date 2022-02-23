@@ -1,3 +1,4 @@
+import random
 
 import numpy as np
 import pandas as pd
@@ -14,6 +15,19 @@ def reference_temperature(temperature):
     return sum([.5 ** i * daily_average.shift(i).fillna(method='bfill') for i in range(4)]) / \
            sum([.5 ** i for i in range(4)])
 
+
+def adjust_temperature(temperature, heating_thresholds):
+
+    # Difference as compared to Germany
+    diff = heating_thresholds - heating_thresholds['DE']
+
+    # Shift reference temperature by this difference
+    adjusted = temperature.copy()
+
+    for country in temperature.columns.get_level_values(0).unique():
+        adjusted[country] = temperature[country] - diff[country]
+
+    return adjusted
 
 def daily_heat(temperature, wind, all_parameters):
 
@@ -33,6 +47,8 @@ def daily_heat(temperature, wind, all_parameters):
         ).max()
 
         return sigmoid + linear
+
+    return daily(temperature, wind, all_parameters, heat_function)
 
     return daily(temperature, wind, all_parameters, heat_function)
 
@@ -134,9 +150,9 @@ def finishing(df, mapped_population, building_database):
     # Single- and multi-family houses are aggregated assuming a ratio of 70:30
     # Transforming to heat demand assuming an average conversion efficiency of 0.9
     building_database = {
-        'SFH': .9 * .7 * building_database['residential'],
-        'MFH': .9 * .3 * building_database['residential'],
-        'COM': .9 * building_database['commercial']
+        'SFH': .7 * building_database['Residential'],
+        'MFH': .3 * building_database['Residential'],
+        'COM': building_database['Tertiary']
     }
 
     results = []
@@ -158,20 +174,27 @@ def finishing(df, mapped_population, building_database):
             normalized.append(df_cb.multiply(factor))
 
             # Scaling to building database
-            database_years = building_data.columns
-            factors = pd.Series([
-                1000000 / df_cb.loc[df_cb.index.year == year, ].sum().sum() * building_data.loc[country, str(year)]
-                if str(year) in database_years else float('nan')
-                for year in years
-            ], index=years)
-            absolute.append(df_cb.multiply(
-                pd.Series(factors.loc[df_cb.index.year].values, index=df_cb.index), axis=0, fill_value=None
-            ))
+            if country not in ['CH', 'NO']:
+                database_years = building_data.columns
+                factors = pd.Series([
+                    building_data.loc[country, str(year)] * 1000000 / df_cb.loc[df_cb.index.year == year, ].sum().sum()
+                    if str(year) in database_years else float('nan')
+                    for year in years
+                ], index=years)
+                absolute.append(df_cb.multiply(
+                    pd.Series(factors.loc[df_cb.index.year].values, index=df_cb.index), axis=0, fill_value=None
+                ))
 
-        country_results = pd.concat(
-            [pd.concat(x, axis=1, keys=building_database.keys()) for x in [normalized, absolute]],
-            axis=1, keys=['MW/TWh', 'MW']
-        ).apply(pd.to_numeric, downcast='float')
+        if country not in ['CH', 'NO']:
+            country_results = pd.concat(
+                [pd.concat(x, axis=1, keys=building_database.keys()) for x in [normalized, absolute]],
+                axis=1, keys=['MW/TWh', 'MW']
+            ).apply(pd.to_numeric, downcast='float')
+        else:
+            country_results = pd.concat(
+                [pd.concat(x, axis=1, keys=building_database.keys()) for x in [normalized]],
+                axis=1, keys=['MW/TWh']
+            ).apply(pd.to_numeric, downcast='float')
 
         # Change index to UCT
         results.append(country_results.tz_convert('utc'))
