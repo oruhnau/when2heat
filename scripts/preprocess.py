@@ -38,6 +38,7 @@ def map_population(input_path, countries, interim_path, plot=True):
                 # Make list from MultiIndex (this is necessary for the spatial join)
                 weather_grid.index = weather_grid.index.tolist()
 
+
             # For Luxembourg, a single weather grid point is manually added for lack of population geodata
             if country == 'LU':
                 s = pd.Series({(49.5, 6): 1})
@@ -87,7 +88,6 @@ def wind(input_path, mapped_population, plot=True):
 
     # Temporal average
     s = df.mean(0)
-
     if plot:
         print('Plot of the wind averages for visual inspection:')
         gdf = gpd.GeoDataFrame(s, columns=['wind'])

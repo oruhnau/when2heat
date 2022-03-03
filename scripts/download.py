@@ -48,7 +48,6 @@ def temperatures(input_path, year_start, year_end):
             file = os.path.join(weather_path, filename)
 
             if not os.path.isfile(file):
-
                 #Select period
                 data_package = 'reanalysis-era5-single-levels'
                 variable = variable
@@ -83,7 +82,7 @@ def weather(data_package, variable, dates, product_type, file):
         "month": dates["month"],
         "time": dates["time"],
         'product_type': product_type,
-        'area': [72, -10, 36.75, 25.5]
+        'area': [72, -10.5, 36.75, 25.5]
     }
 
     if (variable == '2m_temperature') | (variable == 'soil_temperature_level_1'):

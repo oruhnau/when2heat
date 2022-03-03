@@ -12,7 +12,6 @@ def temperature(input_path, year_start, year_end, parameter):
 
     df_list = []
     for year in range(year_start, year_end + 1):
-
         if parameter == "t2m":
             df_int = pd.concat(
                 [weather(input_path, 'ERA_temperature_{}_{}.nc'.format('2m_temperature', year), parameter)],
@@ -38,7 +37,6 @@ def wind(input_path):
 def weather(input_path, filename, variable_name):
 
     file = os.path.join(input_path, 'weather', filename)
-
     # Read the netCDF file
     nc = Dataset(file)
     time = nc.variables['time'][:]
@@ -46,9 +44,6 @@ def weather(input_path, filename, variable_name):
     latitude = nc.variables['latitude'][:]
     longitude = nc.variables['longitude'][:]
     variable = nc.variables[variable_name][:]
-
-    if variable_name == "si10":
-        variable = variable[:, 0].data
 
     # Transform to pd.DataFrame
     index = pd.Index(num2date(time, time_units, only_use_python_datetimes=True), name='time')
