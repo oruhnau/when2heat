@@ -90,7 +90,7 @@ def daily(temperature, wind, all_parameters, func):
     )
 
 
-def hourly_heat(daily_df, temperature, parameters):
+def hourly_heat(daily_df, temperature, parameters, countries):
 
     # According to BGW 2006, temperature classes are derived from the temperature data
     # This is re-sampled to a 60-min-resolution and passed to the general hourly function
@@ -100,7 +100,7 @@ def hourly_heat(daily_df, temperature, parameters):
         '60min'
     ).astype(int).astype(str)
 
-    return hourly(daily_df, classes, parameters)
+    return hourly(daily_df, classes, parameters, countries)
 
 
 def hourly_water(daily_df, temperature, parameters):
@@ -113,10 +113,10 @@ def hourly_water(daily_df, temperature, parameters):
         '60min'
     ).astype(int).astype(str)
 
-    return hourly(daily_df, classes, parameters)
+    return hourly(daily_df, classes, parameters, countries)
 
 
-def hourly(daily_df, classes, parameters):
+def hourly(daily_df, classes, parameters, countries):
 
     def hourly_factors(building):
 
@@ -136,11 +136,22 @@ def hourly(daily_df, classes, parameters):
         return slp
 
     buildings = daily_df.columns.get_level_values('building').unique()
+    print(buildings)
+    tmp = { }
+    for building in buildings:
+        tmp[building] = []
+        for country in countries:
+            print(building + country)
+            tmp[building].append(upsample_df(daily_df[building][country], '60min') * hourly_factors(building))
+    return None
 
-    results = pd.concat(
-        [upsample_df(daily_df, '60min')[building] * hourly_factors(building) for building in buildings],
-        keys=buildings, names=['building', 'country', 'latitude', 'longitude'], axis=1
-    )
+    pd.concat([
+        tmp[building] for building in buildings
+        ], keys=buildings, names=['building', 'country', 'latitude', 'longitude'], axis=1)
+    #results = pd.concat(
+    #    [upsample_df(daily_df, '60min')[building] * hourly_factors(building) for building in buildings],
+    #    keys=buildings, names=['building', 'country', 'latitude', 'longitude'], axis=1
+    #)
 
     return results.swaplevel('building', 'country', axis=1)
 
