@@ -1,4 +1,3 @@
-import random
 
 import numpy as np
 import pandas as pd
@@ -29,6 +28,7 @@ def adjust_temperature(temperature, heating_thresholds):
 
     return adjusted
 
+
 def daily_heat(temperature, wind, all_parameters):
 
     # BDEW et al. 2015 describes the function for the daily heat demand
@@ -47,8 +47,6 @@ def daily_heat(temperature, wind, all_parameters):
         ).max()
 
         return sigmoid + linear
-
-    return daily(temperature, wind, all_parameters, heat_function)
 
     return daily(temperature, wind, all_parameters, heat_function)
 
@@ -90,7 +88,7 @@ def daily(temperature, wind, all_parameters, func):
     )
 
 
-def hourly_heat(daily_df, temperature, parameters, countries):
+def hourly_heat(daily_df, temperature, parameters):
 
     # According to BGW 2006, temperature classes are derived from the temperature data
     # This is re-sampled to a 60-min-resolution and passed to the general hourly function
@@ -100,7 +98,7 @@ def hourly_heat(daily_df, temperature, parameters, countries):
         '60min'
     ).astype(int).astype(str)
 
-    return hourly(daily_df, classes, parameters, countries)
+    return hourly(daily_df, classes, parameters)
 
 
 def hourly_water(daily_df, temperature, parameters):
@@ -113,47 +111,49 @@ def hourly_water(daily_df, temperature, parameters):
         '60min'
     ).astype(int).astype(str)
 
-    return hourly(daily_df, classes, parameters, countries)
+    return hourly(daily_df, classes, parameters)
 
 
-def hourly(daily_df, classes, parameters, countries):
+def hourly(daily_df, classes, parameters):
 
-    def hourly_factors(building):
+    def hourly_factors(building, country_classes):
 
         # This function selects hourly factors from BGW 2006 by time and temperature class
-        slp = pd.DataFrame(index=classes.index, columns=classes.columns)
+        slp = pd.DataFrame(index=country_classes.index, columns=country_classes.columns)
 
         # Time includes the hour of the day
-        times = classes.index.map(lambda x: x.strftime('%H:%M'))
+        times = country_classes.index.map(lambda x: x.strftime('%H:%M'))
+
         # For commercial buildings, time additionally includes the weekday
         if building == 'COM':
-            weekdays = classes.index.map(lambda x: int(x.strftime('%w')))
+            weekdays = country_classes.index.map(lambda x: int(x.strftime('%w')))
             times = list(zip(weekdays, times))
 
-        for column in classes.columns:
-            slp[column] = parameters[building].lookup(times, classes.loc[:, column])
+        for column in country_classes.columns:
+            slp[column] = parameters[building].lookup(times, country_classes.loc[:, column])
 
         return slp
 
+    # Upsample daily_df to 60 minutes
+    upsampled = upsample_df(daily_df, '60min')
+
+    countries = daily_df.columns.get_level_values('country').unique()
     buildings = daily_df.columns.get_level_values('building').unique()
-    print(buildings)
-    tmp = { }
-    for building in buildings:
-        tmp[building] = []
-        for country in countries:
-            print(building + country)
-            tmp[building].append(upsample_df(daily_df[building][country], '60min') * hourly_factors(building))
-    return None
 
-    pd.concat([
-        tmp[building] for building in buildings
-        ], keys=buildings, names=['building', 'country', 'latitude', 'longitude'], axis=1)
-    #results = pd.concat(
-    #    [upsample_df(daily_df, '60min')[building] * hourly_factors(building) for building in buildings],
-    #    keys=buildings, names=['building', 'country', 'latitude', 'longitude'], axis=1
-    #)
+    country_results = {}
+    for country in countries:
+        print(country)
+        country_results[country] = pd.concat(
+            [upsampled[building][country] * hourly_factors(building, classes[country])
+             for building in buildings],
+            keys=buildings, names=['building', 'latitude', 'longitude'], axis=1
+        )
 
-    return results.swaplevel('building', 'country', axis=1)
+    results = pd.concat(
+        country_results.values(), keys=countries, names=['country', 'building', 'latitude', 'longitude'], axis=1
+    )
+
+    return results
 
 
 def finishing(df, mapped_population, building_database):
