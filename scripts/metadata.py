@@ -197,6 +197,7 @@ country_map = {
     'AT': 'Austria',
     'BE': 'Belgium',
     'BG': 'Bulgaria',
+    'CH': 'Switzerland',
     'CZ': 'Czech Republic',
     'DE': 'Germany',
     'DK': 'Denmark',
