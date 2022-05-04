@@ -134,18 +134,19 @@ def hourly(daily_df, classes, parameters):
 
         return slp
 
+    country_results = {}
     # Upsample daily_df to 60 minutes
     upsampled = upsample_df(daily_df, '60min')
 
     countries = daily_df.columns.get_level_values('country').unique()
     buildings = daily_df.columns.get_level_values('building').unique()
 
-    country_results = {}
+        
     for country in countries:
         print(country)
         country_results[country] = pd.concat(
             [upsampled[building][country] * hourly_factors(building, classes[country])
-             for building in buildings],
+                for building in buildings],
             keys=buildings, names=['building', 'latitude', 'longitude'], axis=1
         )
 
@@ -195,6 +196,7 @@ def finishing(df, mapped_population, building_database):
                 absolute.append(df_cb.multiply(
                     pd.Series(factors.loc[df_cb.index.year].values, index=df_cb.index), axis=0, fill_value=None
                 ))
+
 
         if country not in ['CH', 'NO']:
             country_results = pd.concat(
