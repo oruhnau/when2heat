@@ -67,6 +67,8 @@ def finishing(cop, demand_space, demand_water, correction=.85):
         axis=1, names=['source', 'sink', 'country', 'latitude', 'longitude']
     ).sort_index(axis=1)
 
+
+
     # Prepare demand values
     demand_space = demand_space.loc[:, demand_space.columns.get_level_values('unit') == 'MW/TWh']
     demand_space = group_df_by_multiple_column_levels(demand_space, ['country', 'latitude', 'longitude'])
@@ -92,7 +94,7 @@ def finishing(cop, demand_space, demand_water, correction=.85):
             [demand_water.groupby(level=0, axis=1).sum()
              if sink == 'water' else
              demand_space.groupby(level=0, axis=1).sum()
-             for sink in sinks],
+             for sink in sinks], ##
             keys=sinks, axis=1
         ) for source in sources],
         keys=sources, axis=1, names=['source', 'sink', 'country']
@@ -107,7 +109,7 @@ def finishing(cop, demand_space, demand_water, correction=.85):
 
     # Rename columns
     cop.columns = cop.columns.set_levels(['ASHP', 'GSHP', 'WSHP'], level=0)
-    cop.columns = cop.columns.set_levels(['radiator', 'floor', 'water'], level=1)
+    cop.columns = cop.columns.set_levels(['floor', 'radiator', 'water'], level=1)
     cop.columns = pd.MultiIndex.from_tuples([('_'.join([level for level in col_name[0:2]]), col_name[2]) for col_name in cop.columns.values])
     cop = pd.concat([cop], keys=['COP'], axis=1)
     cop = pd.concat([cop], keys=['coefficient'], axis=1)

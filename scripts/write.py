@@ -5,9 +5,11 @@ import pandas as pd
 
 
 def shaping(demand, cop):
+    print("index:")
 
     # Merge demand and cop
     df = pd.concat([demand, cop], axis=1)
+
     df = df.sort_index(level=0, axis=1)
 
     # Timestamp

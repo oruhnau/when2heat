@@ -10,6 +10,7 @@ import shutil
 
 
 metadata_head = head = '''
+hide: true
 name: when2heat
 external: true
 id: https://doi.org/10.25832/when2heat/{version}
