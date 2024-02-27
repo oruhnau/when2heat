@@ -11,7 +11,7 @@ def reference_temperature(temperature):
     daily_average = temperature.groupby(pd.Grouper(freq='D')).mean().copy()
 
     # Weighted mean
-    return sum([.5 ** i * daily_average.shift(i).fillna(method='bfill') for i in range(4)]) / \
+    return sum([.5 ** i * daily_average.shift(i).bfill() for i in range(4)]) / \
            sum([.5 ** i for i in range(4)])
 
 
@@ -129,9 +129,16 @@ def hourly(daily_df, classes, parameters):
             weekdays = country_classes.index.map(lambda x: int(x.strftime('%w')))
             times = list(zip(weekdays, times))
 
-        for column in country_classes.columns:
-            slp[column] = parameters[building].lookup(times, country_classes.loc[:, column])
+            for column in country_classes.columns:
+                slp[column] = [parameters[building]._get_value(row, col)
+                               for row, col in zip(times, country_classes.loc[:, column])]
+        else:
+            # calculate each entry only once per day
+            country_classes_daily = country_classes.resample('D').first()
 
+            for column in country_classes.columns:
+                slp[column] = np.array([parameters[building].loc[:, col].values
+                 for col in country_classes_daily.loc[:, column]]).ravel()
         return slp
 
     country_results = {}
@@ -143,7 +150,6 @@ def hourly(daily_df, classes, parameters):
 
         
     for country in countries:
-        print(country)
         country_results[country] = pd.concat(
             [upsampled[building][country] * hourly_factors(building, classes[country])
                 for building in buildings],
@@ -234,10 +240,18 @@ def combine(space, water):
                     keys=['space', 'water', 'total'], names=['attribute', 'country', 'unit'])
 
     # Rename columns
+    # df.columns = pd.MultiIndex.from_tuples(
+    #     [('_'.join([level for level in [col_name[0], col_name[3]]]), col_name[1], col_name[2])
+    #      for col_name in df.columns.values]
+    # )
+
+    # Rename columns with MultiIndex (Update to new Pandas version)
     df.columns = pd.MultiIndex.from_tuples(
-        [('_'.join([level for level in [col_name[0], col_name[3]]]), col_name[1], col_name[2])
-         for col_name in df.columns.values]
+        [(f"{col_name[0]}_{col_name[3]}", col_name[1], col_name[2])
+         for col_name in df.columns.values],
+        names=['attribute', 'country', 'unit']
     )
+
 
     # Combine building-specific and aggregated time series, round, restore nan
     df = pd.concat([dfx, df], axis=1).round()
