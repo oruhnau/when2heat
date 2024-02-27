@@ -19,7 +19,10 @@ def localize(df, country, ambiguous=None):
         idx = pd.Timestamp(err.args[0].split("from ")[1].split(",")[0])
         unambiguous_df = localize(df.loc[df.index != idx, ], country)
         ambiguous_df = localize(df.loc[[idx, idx], ], country, ambiguous=[True, False])
-        return unambiguous_df.append(ambiguous_df).sort_index()
+
+        # updated to new Pandas
+        return pd.concat([unambiguous_df, ambiguous_df]).sort_index()
+        # return unambiguous_df.append(ambiguous_df).sort_index()
 
 
 def upsample_df(df, resolution):
@@ -36,7 +39,9 @@ def upsample_df(df, resolution):
     df.loc[df.index[-1] + freq, :] = df.iloc[-1, :]
 
     # Up-sample
-    df = df.resample(resolution).pad()
+    # Deprecated since version 2.0
+    # df = df.resample(resolution).pad()
+    df = df.resample(resolution).ffill()
 
     # Drop the temporal low-resolution value
     df.drop(df.index[-1], inplace=True)
