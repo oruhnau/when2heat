@@ -1,15 +1,14 @@
-
 import os
 import pandas as pd
 import geopandas as gpd
 import datetime as dt
 from netCDF4 import Dataset, num2date
 from shapely.geometry import Point
+# TODO remove when dummy data is no longer needed
+import calendar
 
 
 def temperature(input_path, year_start, year_end, parameter):
-
-
     df_list = []
     for year in range(year_start, year_end + 1):
         if parameter == "t2m":
@@ -24,18 +23,46 @@ def temperature(input_path, year_start, year_end, parameter):
                 axis=0
             )
         df_list.append(df_int)
-    df = pd.concat(df_list, axis = 0)
+    df = pd.concat(df_list, axis=0)
+
+    return df
+
+
+# TODO remove if no longer needed
+def dummy_temperature(input_path, year_start, year_end, parameter):
+    df_list = []
+    for year in range(year_start, year_end + 1):
+        if parameter == "t2m":
+            df_int = pd.concat(
+                [weather(input_path, 'ERA_temperature_{}_{}.nc'.format('2m_temperature', 2008), parameter)],
+                axis=0
+            )
+
+        if parameter == "stl1":
+            df_int = pd.concat(
+                [weather(input_path, 'ERA_temperature_{}_{}.nc'.format('soil_temperature_level_1', 2008), parameter)],
+                axis=0
+            )
+
+        if year != 2008:
+            # Check if the index represents a leap year
+            diff = year - 2008
+            if not calendar.isleap(year):
+                df_int = df_int[~((df_int.index.month == 2) & (df_int.index.day == 29))]
+
+            df_int.index = df_int.index + pd.DateOffset(years=diff)
+
+        df_list.append(df_int)
+    df = pd.concat(df_list, axis=0)
 
     return df
 
 
 def wind(input_path):
-
     return weather(input_path, 'ERA_wind.nc', 'si10')
 
 
 def weather(input_path, filename, variable_name):
-
     file = os.path.join(input_path, 'weather', filename)
     # Read the netCDF file
     nc = Dataset(file)
@@ -56,8 +83,8 @@ def weather(input_path, filename, variable_name):
 
     return df
 
-def population(input_path):
 
+def population(input_path):
     directory = 'population/Version 2_0_1/'
     filename = 'GEOSTAT_grid_POP_1K_2011_V2_0_1.csv'
 
@@ -79,26 +106,22 @@ def population(input_path):
 
 
 def daily_parameters(input_path):
-
     file = os.path.join(input_path, 'bgw_bdew', 'daily_demand.csv')
     return pd.read_csv(file, sep=';', decimal=',', header=[0, 1], index_col=0)
 
 
 def heating_thresholds(input_path):
-
     file = os.path.join(input_path, 'heating_thresholds', 'heating_thresholds.csv')
     return pd.read_csv(file, sep=';', decimal=',', index_col=0)['Heating threshold']
 
 
 def hourly_parameters(input_path):
-
     def read():
         file = os.path.join(input_path, 'bgw_bdew', filename)
         return pd.read_csv(file, sep=';', decimal=',', index_col=index_col).apply(pd.to_numeric, downcast='float')
 
     parameters = {}
     for building_type in ['SFH', 'MFH', 'COM']:
-
         filename = 'hourly_factors_{}.csv'.format(building_type)
 
         # MultiIndex for commercial heat because of weekday dependency
@@ -110,7 +133,6 @@ def hourly_parameters(input_path):
 
 
 def building_database(input_path):
-
     return {
         heat_type: {
             building_type: pd.read_csv(
@@ -124,7 +146,7 @@ def building_database(input_path):
         for heat_type in ['space', 'water']
     }
 
-def cop_parameters(input_path):
 
+def cop_parameters(input_path):
     file = os.path.join(input_path, 'cop', 'cop_parameters.csv')
     return pd.read_csv(file, sep=';', decimal=',', header=0, index_col=0).apply(pd.to_numeric, downcast='float')

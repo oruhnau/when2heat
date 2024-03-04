@@ -1,5 +1,7 @@
 
 import os
+
+import numpy as np
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
@@ -75,8 +77,7 @@ def map_population(input_path, countries, interim_path, plot=True):
     if plot:
         print('Plot of the re-mapped population data of {} (first selected country) '
               'for visual inspection:'.format(countries[0]))
-        gdf = gpd.GeoDataFrame(mapped_population[countries[0]], columns=['TOT_P'])
-        gdf['geometry'] = gdf.index.map(lambda i: Point(reversed(i)))
+        gdf = gpd.GeoDataFrame(mapped_population[countries[0]], columns=['TOT_P'], geometry=[Point(reversed(i)) for i in mapped_population[countries[0]].index])
         gdf.plot(column='TOT_P')
 
     return mapped_population
@@ -90,8 +91,7 @@ def wind(input_path, mapped_population, plot=True):
     s = df.mean(0)
     if plot:
         print('Plot of the wind averages for visual inspection:')
-        gdf = gpd.GeoDataFrame(s, columns=['wind'])
-        gdf['geometry'] = gdf.index.map(lambda i: Point(reversed(i)))
+        gdf = gpd.GeoDataFrame(s, columns=['wind'], geometry=[Point(reversed(i)) for i in s.index])
         gdf.plot(column='wind')
 
     # Wind data is filtered by country
@@ -101,7 +101,7 @@ def wind(input_path, mapped_population, plot=True):
     ).apply(pd.to_numeric, downcast='float')
 
 
-def temperature(input_path, year_start, year_end, mapped_population):
+def temperature(input_path, year_start, year_end, mapped_population, test_mode):
 
     parameters = {
         'air': 't2m',
@@ -113,7 +113,13 @@ def temperature(input_path, year_start, year_end, mapped_population):
 
         ts_years = []
         for year in list(range(year_start, year_end + 1)):
-            ts = read.temperature(input_path, year, year, parameter)
+            if test_mode:
+                # TODO remove dummy usage
+                ts = read.dummy_temperature(input_path, year, year, parameter)
+            else:
+                ts = read.temperature(input_path, year, year, parameter)
+
+            ts[ts.select_dtypes(np.float64).columns] = ts.select_dtypes(np.float64).astype(np.float32)
             ts_years.append(ts)
 
         df_years = pd.concat(ts_years, axis=0)

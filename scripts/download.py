@@ -37,12 +37,16 @@ def wind(input_path):
     print("Download successful")
 
 
-def temperatures(input_path, year_start, year_end):
+def temperatures(input_path, year_start, year_end, test_mode):
 
     for year in ["%.2d" % y for y in range(year_start, year_end+1)]:
         for variable in ['2m_temperature', 'soil_temperature_level_1']:
-
             filename = 'ERA_temperature_{}_{}.nc'.format(variable, year)
+
+            # TODO remove
+            if test_mode:
+                filename = 'ERA_temperature_{}_{}.nc'.format(variable, "2008")
+
             weather_path = os.path.join(input_path, 'weather')
             os.makedirs(weather_path, exist_ok=True)
             file = os.path.join(weather_path, filename)
