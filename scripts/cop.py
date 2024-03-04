@@ -67,8 +67,6 @@ def finishing(cop, demand_space, demand_water, correction=.85):
         axis=1, names=['source', 'sink', 'country', 'latitude', 'longitude']
     ).sort_index(axis=1)
 
-
-
     # Prepare demand values
     demand_space = demand_space.loc[:, demand_space.columns.get_level_values('unit') == 'MW/TWh']
     demand_space = group_df_by_multiple_column_levels(demand_space, ['country', 'latitude', 'longitude'])
@@ -104,8 +102,9 @@ def finishing(cop, demand_space, demand_water, correction=.85):
     # Correction and round
     cop = (cop * correction).round(2)
 
+    # Erik: no longer needed as NA are handled in the final merge step
     # Fill NA at the end and the beginning of the dataset arising from different local times
-    cop = cop.fillna(method='bfill').fillna(method='ffill')
+    # cop = cop.fillna(method='bfill').fillna(method='ffill')
 
     # Rename columns
     cop.columns = cop.columns.set_levels(['ASHP', 'GSHP', 'WSHP'], level=0)
