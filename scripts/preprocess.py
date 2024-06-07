@@ -119,7 +119,13 @@ def temperature(input_path, year_start, year_end, mapped_population, test_mode):
             else:
                 ts = read.temperature(input_path, year, year, parameter)
 
-            ts[ts.select_dtypes(np.float64).columns] = ts.select_dtypes(np.float64).astype(np.float32)
+            # ts[ts.select_dtypes(np.float64).columns] = ts.select_dtypes(np.float64).astype(np.float32)
+
+            # Convert float64 columns to float32 if any
+            # float64_cols = ts.select_dtypes(np.float64).columns
+            # if not float64_cols.empty:
+            #     ts[float64_cols] = ts[float64_cols].astype(np.float32, copy=False)
+
             ts_years.append(ts)
 
         df_years = pd.concat(ts_years, axis=0)
